@@ -23,10 +23,10 @@ export class ImportProductsService {
     private readonly langChainService: LangChainService,
   ) {}
 
-  @Cron('0 39 6 * * *')
+  @Cron('0 25 7 * * *')
   async handleCron() {
     const inputStoragePath = path.resolve(__dirname, '../../../storage/input');
-    this.logger.debug('Called when the current second is 45');
+    this.logger.debug('Job Called');
     await this.processCsvFile(path.resolve(inputStoragePath, 'images40.csv'));
     await this.enhanceDescription();
   }
@@ -184,6 +184,7 @@ export class ImportProductsService {
           },
         ],
         categoryId: row['CategoryID'],
+        categoryName: row['PrimaryCategoryName'],
       };
     }
     const variantId = row['ItemID'];
@@ -256,17 +257,46 @@ export class ImportProductsService {
     ];
   }
   private async enhanceDescription() {
-    const products: any = await this.productModel
-      .find({ vendorId: this.getVendorId() })
-      .limit(10);
+    try {
+      let skip = 0;
+      const batchSize = this.DESCRIPTION_ENHANCE_LIMIT;
 
-    for (const product of products) {
-      const newDescription =
-        await this.langChainService.enhanceProductDescriptions({
-          productName: product.name,
-          description: product.description,
-          categoryName: product.category,
+      while (true) {
+        const products: any[] = await this.productModel
+          .find({ vendorId: this.getVendorId() })
+          .skip(skip)
+          .limit(batchSize)
+          .lean();
+
+        if (products.length === 0) {
+          break;
+        }
+
+        const promises = products.map(async (product) => {
+          const newDescription =
+            await this.langChainService.enhanceProductDescriptions({
+              productName: product.name,
+              description: product.description,
+              categoryName: product.categoryName,
+            });
+
+          await this.productModel.updateOne(
+            { _id: product._id },
+            { $set: { description: newDescription } },
+          );
         });
+
+        await Promise.all(promises);
+
+        // Increment the skip count to fetch the next batch
+        skip += batchSize;
+        console.log(skip);
+      }
+
+      console.log('Descriptions enhanced and updated successfully.');
+    } catch (error) {
+      console.error('Error enhancing descriptions:', error);
+      throw error; // Handle or propagate the error as needed
     }
   }
 }

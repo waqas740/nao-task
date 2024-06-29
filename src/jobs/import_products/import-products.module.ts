@@ -1,4 +1,3 @@
-import { Variant, VariantSchema } from './../../schemas/variant.schema';
 import { Module } from '@nestjs/common';
 import { ImportProductsService } from './import-products.job';
 import { Product, ProductSchema } from '../../schemas/product.schema';
@@ -10,10 +9,6 @@ import { LangChainService } from 'src/services/langchain';
       {
         name: Product.name,
         schema: ProductSchema,
-      },
-      {
-        name: Variant.name,
-        schema: VariantSchema,
       },
     ]),
   ],

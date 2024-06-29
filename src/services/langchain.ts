@@ -31,13 +31,13 @@ export class LangChainService {
     ]);
 
     const llmChain = prompt.pipe(this.chatModel).pipe(outputParser);
-    console.log(llmChain);
 
-    await llmChain.invoke({
+    const desc = await llmChain.invoke({
       productName: product.productName,
       description: product.description,
       nameOfCategory: product.categoryName,
     });
-    return;
+
+    return desc;
   }
 }

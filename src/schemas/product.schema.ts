@@ -114,6 +114,12 @@ export class Product extends Document {
 
   @Prop({ type: String })
   categoryId: string;
+
+  @Prop({ type: String })
+  categoryName: string;
+
+  @Prop({ type: Date, default: null })
+  deletedAt: Date;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
